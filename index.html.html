@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Kevin.m Photography | Fine Art Prints</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: radial-gradient(circle at 10% 20%, rgba(10, 15, 30, 1) 0%, rgba(5, 8, 20, 1) 100%);
+            font-family: 'Inter', sans-serif;
+            color: #f0f3fa;
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+        }
+        .container { max-width: 1400px; margin: 0 auto; position: relative; }
+        .donation-corner { position: absolute; top: 0; right: 0; z-index: 10; }
+        .donate-corner-btn {
+            background: linear-gradient(105deg, #fbbf24 0%, #f59e0b 100%);
+            color: #0a0f1a;
+            padding: 0.6rem 1.3rem;
+            border-radius: 40px;
+            text-decoration: none;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            transition: transform 0.2s;
+            box-shadow: 0 8px 20px rgba(251,191,36,0.25);
+        }
+        .donate-corner-btn:hover { transform: translateY(-2px); }
+        .hero { text-align: center; margin: 1rem 0 3rem 0; }
+        .hero h1 {
+            font-size: 3.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff, #fbbf24, #ec489a);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+        .hero p { font-size: 1.1rem; color: #a0b0d0; margin-top: 0.8rem; }
+        .storage-info {
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(4px);
+            padding: 0.3rem 1rem;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            display: inline-block;
+            margin-top: 1rem;
+        }
+        .admin-panel {
+            display: none;
+            background: rgba(15,25,45,0.8);
+            backdrop-filter: blur(16px);
+            border-radius: 2rem;
+            padding: 1.8rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(251,191,36,0.3);
+        }
+        .admin-toggle { text-align: right; margin-bottom: 1rem; }
+        .admin-toggle button {
+            background: #2a3a5a;
+            border: none;
+            padding: 0.4rem 1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            color: white;
+        }
+        .upload-area {
+            border: 2px dashed #fbbf24;
+            border-radius: 1.2rem;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            background: rgba(0,0,0,0.2);
+        }
+        .photo-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .photo-form input, .photo-form textarea {
+            flex: 1;
+            padding: 0.8rem 1rem;
+            border-radius: 1rem;
+            border: 1px solid #2d3a5e;
+            background: #0f172a;
+            color: white;
+        }
+        .btn-upload {
+            background: linear-gradient(105deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.8rem;
+            border-radius: 2rem;
+            cursor: pointer;
+        }
+        .gallery-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .search-box {
+            background: rgba(30,40,60,0.7);
+            backdrop-filter: blur(8px);
+            border-radius: 40px;
+            padding: 0.5rem 1rem;
+            display: flex;
+            gap: 0.6rem;
+            border: 1px solid #2d3a5e;
+        }
+        .search-box input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: white;
+            width: 180px;
+        }
+        .stats {
+            background: #3b82f6;
+            padding: 0.4rem 1.2rem;
+            border-radius: 40px;
+        }
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.8rem;
+        }
+        .photo-card {
+            background: rgba(18,28,45,0.7);
+            backdrop-filter: blur(8px);
+            border-radius: 1.5rem;
+            overflow: hidden;
+            transition: transform 0.25s;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .photo-card:hover {
+            transform: translateY(-6px);
+            border-color: #fbbf24;
+        }
+        .image-wrapper {
+            aspect-ratio: 1/1;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        .image-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s;
+        }
+        .photo-card:hover .image-wrapper img { transform: scale(1.05); }
+        .photo-info { padding: 1rem; }
+        .photo-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #fbbf24;
+            margin-bottom: 0.3rem;
+        }
+        .photo-desc {
+            font-size: 0.8rem;
+            color: #a0b0d0;
+            margin-bottom: 0.8rem;
+        }
+        .photo-actions {
+            display: flex;
+            gap: 0.6rem;
+            margin-top: 0.5rem;
+        }
+        .buy-print-btn, .delete-btn {
+            flex: 1;
+            text-align: center;
+            padding: 0.4rem;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+        .buy-print-btn {
+            background: #fbbf24;
+            color: #0a0f1a;
+        }
+        .delete-btn {
+            background: rgba(220,38,38,0.2);
+            color: #f87171;
+        }
+        .photo-meta {
+            font-size: 0.65rem;
+            color: #6a7c9e;
+            margin-top: 0.7rem;
+            text-align: right;
+        }
+        .monetization-section {
+            margin-top: 3rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.8rem;
+        }
+        .card {
+            background: rgba(20,30,55,0.5);
+            backdrop-filter: blur(12px);
+            border-radius: 1.8rem;
+            padding: 1.5rem;
+            flex: 1;
+            min-width: 240px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .card h3 { color: #fbbf24; margin-bottom: 1rem; }
+        .affiliate-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px,1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .affiliate-item {
+            background: #0f172a;
+            padding: 0.8rem;
+            border-radius: 1rem;
+            text-align: center;
+        }
+        .affiliate-item a {
+            color: #3b82f6;
+            text-decoration: none;
+            display: block;
+            margin-top: 0.4rem;
+        }
+        .donate-btn {
+            display: inline-block;
+            padding: 0.7rem 1.6rem;
+            border-radius: 40px;
+            text-decoration: none;
+            margin-top: 1rem;
+            font-weight: 600;
+            background: linear-gradient(105deg, #fbbf24, #f59e0b);
+            color: #0a0f1a;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            background: rgba(30,40,60,0.5);
+            border-radius: 1.5rem;
+        }
+        .print-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            backdrop-filter: blur(12px);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .print-modal-content {
+            background: #111827;
+            border-radius: 2rem;
+            max-width: 500px;
+            width: 90%;
+            padding: 2rem;
+            border: 1px solid #fbbf24;
+            color: white;
+        }
+        .print-modal-content h3 { color: #fbbf24; margin-bottom: 1rem; }
+        .print-option { margin-bottom: 1rem; }
+        .print-option label { display: block; margin-bottom: 0.3rem; font-weight: 500; }
+        .print-option select, .print-option input {
+            width: 100%;
+            padding: 0.6rem;
+            border-radius: 0.8rem;
+            background: #1f2937;
+            border: 1px solid #4b5563;
+            color: white;
+        }
+        .price-breakdown {
+            background: #1f2937;
+            padding: 0.8rem;
+            border-radius: 1rem;
+            margin: 1rem 0;
+        }
+        .print-modal-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .print-modal-buttons button {
+            flex: 1;
+            padding: 0.7rem;
+            border-radius: 2rem;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-order { background: #fbbf24; color: #0a0f1a; }
+        .btn-cancel { background: #374151; color: white; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal img { max-width: 90%; max-height: 85%; border-radius: 1rem; }
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 2rem;
+            color: white;
+            cursor: pointer;
+        }
+        .admin-login-btn {
+            background: transparent;
+            border: 1.5px solid #3b82f6;
+            color: #3b82f6;
+            padding: 0.5rem 1.2rem;
+            border-radius: 40px;
+            cursor: pointer;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="donation-corner">
+        <a href="upi://pay?pa=9493542358@ybl&pn=Kevin.m%20Photography&cu=INR" target="_blank" class="donate-corner-btn">
+            <i class="fas fa-heart"></i> Donate
+        </a>
+    </div>
+    <div class="hero">
+        <h1><i class="fas fa-camera-retro"></i> Kevin.m Photography</h1>
+        <p>Fine art prints | Visual storytelling | Limited editions</p>
+        <div class="storage-info" id="storageInfo"><i class="fas fa-cloud"></i> Cloud Gallery (Supabase)</div>
+    </div>
+
+    <div id="adminPanel" class="admin-panel">
+        <div class="admin-toggle">
+            <button id="logoutAdminBtn"><i class="fas fa-sign-out-alt"></i> Exit Admin</button>
+        </div>
+        <div class="upload-area" id="uploadArea">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p>Click or drag photos here (JPEG, PNG, WebP)</p>
+            <input type="file" id="fileInput" accept="image/*" multiple style="display: none;">
+        </div>
+        <div class="photo-form">
+            <input type="text" id="photoTitle" placeholder="Photo title *">
+            <textarea id="photoDesc" rows="2" placeholder="Description / story / location"></textarea>
+            <input type="text" id="photoPrice" placeholder="Base price (₹)">
+            <button class="btn-upload" id="uploadBtn"><i class="fas fa-plus"></i> Publish to Gallery</button>
+        </div>
+    </div>
+
+    <div class="gallery-header">
+        <h2><i class="fas fa-images"></i> Portfolio</h2>
+        <div style="display: flex; gap: 1rem;">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search...">
+            </div>
+            <div class="stats" id="photoCount">0 photos</div>
+        </div>
+    </div>
+    <div id="photoGrid" class="photo-grid"><div class="empty-state"><i class="fas fa-camera"></i> <p>Loading artwork...</p></div></div>
+
+    <div class="monetization-section">
+        <div class="card">
+            <h3><i class="fas fa-heart"></i> Support the artist</h3>
+            <a href="upi://pay?pa=9493542358@ybl&pn=Kevin.m%20Photography&cu=INR" target="_blank" class="donate-btn">Buy me a coffee (PhonePe/GPay)</a>
+        </div>
+        <div class="card">
+            <h3><i class="fas fa-camera"></i> Recommended gear</h3>
+            <div class="affiliate-grid">
+                <div class="affiliate-item"><i class="fas fa-camera"></i><p>Nikon Coolpix L840</p><a href="https://www.amazon.com/Nikon-COOLPIX-Digital-Camera-Optical/dp/B00T85P56C?th=1">Check price →</a></div>
+                <div class="affiliate-item"><i class="fas fa-camera"></i><p>Canon EOS M50 II</p><a href="https://www.amazon.com/Canon-Mirrorless-Digital-15-45mm-4728C006/dp/B08VYWWB7M/ref=sr_1_2?crid=5LO7Q0RCZPM3&dib=eyJ2IjoiMSJ9.PsqfHlSDW6qn_wtGxeJRzWVBer2BvUP25chFHMpEbXuqJsA_9cjwlw4cYBbacVTPiCwhHL-Q-DS51xBTcV9swJEwx2Q7MECm0n6UgzQCi-7m9dvkdaRHU5bhQaoQTrLYRnN651rasOt0IwqOUHNvdGBi5sN9wxp3Pn4IVZ8FrICSMWTQbRGO_LzggfDPbQb3CZwQWhL77udBWwShz_v4nm5TBvB6viQeVNKqkmMJvZgc1jNrAoOWPl5miRRPyu2iYboL6iumfka7f7vkYLncPp_pSjtau9DBnBHrxbVxdVY.48MQvuBma6j0voChWfmtCqoxPhzNlNF6uT2ymlZAQbU&dib_tag=se&keywords=Canon+EOS+M50+II&qid=1775207553&s=electronics&sprefix=canon+eos+m50+ii%2Celectronics%2C382&sr=1-2">Check price →</a></div>
+                <div class="affiliate-item"><i class="fas fa-camera"></i><p>Sony Alpha a6400</p><a href="https://www.amazon.com/Sony-Alpha-a6400-Mirrorless-Camera/dp/B07MV3P7M8/ref=sr_1_1?crid=2R8DIT0YQ792U&dib=eyJ2IjoiMSJ9.R198wCL9AkFeblFC-D4VSh6w2dsK0sgfq8Y7YmImXMKt3DKJg4IkwrFCAH1GAGsjBWBOOMpnItHUUpez-oyNG0Hts2ixtFD6-niUPqGw9SaLQJY9WcgTlCDLrsxQowSuW2f4vCK0avi23xFFCJKdxv0G8fUyeW0Z-QHLERJCsMWFdeXmZXxm8N8Dd40rCwvHTvqvjXs7sV8zzndz9esDlHCG5XBbSQKjiR5TuU0RSdg.6ixPFL72RQ3jovs7aQ68IO8ObNBusM0dDTWP7ICaTfg&dib_tag=se&keywords=Sony+Alpha+a6400&qid=1775207588&sprefix=sony+alpha+a6400%2Caps%2C387&sr=8-1">Check price →</a></div>
+            </div>
+            <p style="font-size:0.7rem; text-align:center;">As an Amazon Associate I earn from qualifying purchases.</p>
+        </div>
+    </div>
+    <div style="text-align:center;">
+        <button id="adminLoginBtn" class="admin-login-btn"><i class="fas fa-lock"></i> Admin Login</button>
+    </div>
+</div>
+
+<div id="printModal" class="print-modal">
+    <div class="print-modal-content">
+        <h3><i class="fas fa-shopping-cart"></i> Order this print</h3>
+        <div id="printPhotoInfo" style="margin-bottom: 1rem; font-size:0.9rem; color:#fbbf24;"></div>
+        <div class="print-option">
+            <label>Size</label>
+            <select id="printSize">
+                <option value="8x10">8x10 inches</option>
+                <option value="11x14">11x14 inches</option>
+                <option value="16x20">16x20 inches</option>
+            </select>
+        </div>
+        <div class="print-option">
+            <label>Material</label>
+            <select id="printMaterial">
+                <option value="Premium Photo Paper">Premium Photo Paper</option>
+                <option value="Canvas">Canvas</option>
+                <option value="Matte Fine Art">Matte Fine Art</option>
+            </select>
+        </div>
+        <div class="print-option">
+            <label>Quantity</label>
+            <input type="number" id="printQty" value="1" min="1">
+        </div>
+        <div class="price-breakdown">
+            <div>Base price: ₹<span id="basePriceDisplay">0</span></div>
+            <div>Size multiplier: <span id="sizeMultiplier">1</span>x</div>
+            <div>Material multiplier: <span id="materialMultiplier">1</span>x</div>
+            <div><strong>Total: ₹<span id="totalPrice">0</span></strong></div>
+        </div>
+        <div class="print-option">
+            <label>Your email (for order confirmation)</label>
+            <input type="email" id="customerEmail" placeholder="you@example.com" required>
+        </div>
+        <div class="print-modal-buttons">
+            <button class="btn-order" id="confirmOrderBtn">Pay via UPI & Place Order</button>
+            <button class="btn-cancel" id="closePrintModalBtn">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div id="imageModal" class="modal">
+    <span class="modal-close"><i class="fas fa-times"></i></span>
+    <img id="modalImage" src="">
+</div>
+
+<script>
+    // ========== SUPABASE CONFIGURATION ==========
+    const SUPABASE_URL = "https://jeqmtacbjzjgixivo.supabase.co";
+    // 🔑 IMPORTANT: Replace with your actual anon key from Supabase → Project Settings → API
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImplcXJudHRhY2JqaXpqZ2p4aXZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxOTUwNjUsImV4cCI6MjA5MDc3MTA2NX0.eJmRAnBwZPBGEmmEP1Hhac3kKZwq_mhQJm5TBinD5BU";
+    const STORAGE_BUCKET = "photos";
+    // =============================================
+
+    const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ========== OTHER CONFIGURATIONS ==========
+    const ADMIN_PASSWORD = "Kevin!2013";           // Change if needed
+    const SELLER_EMAIL = "kexinaloneboy@gmail.com";    // CHANGE TO YOUR EMAIL (order notifications)
+    const UPI_ID = "9493542358@ybl";
+
+    const basePrices = { "8x10": 800, "11x14": 1200, "16x20": 2000 };
+    const materialMultipliers = { "Premium Photo Paper": 1, "Canvas": 1.8, "Matte Fine Art": 1.5 };
+
+    let adminMode = false;
+    let photos = [];
+    let currentSearch = '';
+    let currentPrintPhoto = null;
+
+    // Load photos from Supabase table
+    async function loadPhotosFromSupabase() {
+        try {
+            const { data, error } = await supabase
+                .from('photos')
+                .select('*')
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            photos = data || [];
+            renderGallery();
+        } catch (error) {
+            console.error("Error loading photos:", error);
+            document.getElementById('photoGrid').innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle"></i> <p>Error loading gallery. Check Supabase config.</p></div>`;
+        }
+    }
+
+    // Upload photo to Supabase Storage + insert into table
+    async function uploadPhoto(file, title, description, price) {
+        if (!file) { alert("Select a photo"); return false; }
+        if (!title.trim()) { alert("Enter a title"); return false; }
+
+        const uploadBtn = document.getElementById('uploadBtn');
+        const originalText = uploadBtn.innerText;
+        uploadBtn.innerText = "Uploading...";
+        uploadBtn.disabled = true;
+
+        try {
+            const timestamp = Date.now();
+            const fileExt = file.name.split('.').pop();
+            const safeTitle = title.replace(/[^a-z0-9]/gi, '_').substring(0, 30);
+            const fileName = `${timestamp}_${safeTitle}.${fileExt}`;
+
+            // Upload to Storage
+            const { error: uploadError } = await supabase.storage
+                .from(STORAGE_BUCKET)
+                .upload(fileName, file);
+            if (uploadError) throw uploadError;
+
+            // Get public URL
+            const { data: urlData } = supabase.storage
+                .from(STORAGE_BUCKET)
+                .getPublicUrl(fileName);
+            const imageUrl = urlData.publicUrl;
+
+            // Insert into photos table
+            const { error: insertError } = await supabase
+                .from('photos')
+                .insert([{
+                    title: title.trim(),
+                    description: description.trim() || "",
+                    price: price.trim() || "500",
+                    image_url: imageUrl,
+                    created_at: new Date().toISOString()
+                }]);
+            if (insertError) throw insertError;
+
+            alert("Photo uploaded successfully!");
+            await loadPhotosFromSupabase();
+            return true;
+        } catch (error) {
+            console.error("Upload error:", error);
+            alert("Upload failed: " + error.message);
+            return false;
+        } finally {
+            uploadBtn.innerText = originalText;
+            uploadBtn.disabled = false;
+        }
+    }
+
+    // Delete photo from Storage + table
+    async function deletePhoto(id, imageUrl) {
+        if (!confirm("Permanently delete this photograph?")) return;
+
+        try {
+            const fileName = imageUrl.split('/').pop();
+            await supabase.storage.from(STORAGE_BUCKET).remove([fileName]);
+            await supabase.from('photos').delete().eq('id', id);
+            await loadPhotosFromSupabase();
+            alert("Photo deleted!");
+        } catch (error) {
+            console.error("Delete error:", error);
+            alert("Delete failed: " + error.message);
+        }
+    }
+
+    // Print modal logic
+    function showPrintModal(photo) {
+        currentPrintPhoto = photo;
+        document.getElementById('printPhotoInfo').innerHTML = `<strong>${escapeHtml(photo.title)}</strong> – Base: ₹${photo.price}`;
+        document.getElementById('basePriceDisplay').innerText = photo.price;
+        updatePrice();
+        document.getElementById('printModal').style.display = 'flex';
+    }
+
+    function updatePrice() {
+        const size = document.getElementById('printSize').value;
+        const material = document.getElementById('printMaterial').value;
+        const qty = parseInt(document.getElementById('printQty').value) || 1;
+        const base = parseFloat(currentPrintPhoto.price) || 500;
+        const sizePrice = basePrices[size] || base;
+        const multiplier = materialMultipliers[material] || 1;
+        const total = sizePrice * multiplier * qty;
+        document.getElementById('sizeMultiplier').innerText = (sizePrice / base).toFixed(1);
+        document.getElementById('materialMultiplier').innerText = multiplier;
+        document.getElementById('totalPrice').innerText = Math.round(total);
+    }
+
+    function placeOrder() {
+        const email = document.getElementById('customerEmail').value.trim();
+        if (!email) {
+            alert("Please enter your email address.");
+            return;
+        }
+        const size = document.getElementById('printSize').value;
+        const material = document.getElementById('printMaterial').value;
+        const qty = document.getElementById('printQty').value;
+        const totalAmount = parseInt(document.getElementById('totalPrice').innerText);
+        const photoTitle = currentPrintPhoto.title;
+
+        const note = `${photoTitle.substring(0,20)}_${size}_${material}`.replace(/[^a-zA-Z0-9_]/g, '_');
+        const upiLink = `upi://pay?pa=${UPI_ID}&pn=Kevin.m%20Photography&am=${totalAmount}&cu=INR&tn=${note}`;
+        window.location.href = upiLink;
+
+        const subject = `Print Order: ${photoTitle}`;
+        const body = `Customer ${email} placed an order:\n\nPhoto: ${photoTitle}\nSize: ${size}\nMaterial: ${material}\nQuantity: ${qty}\nTotal: ₹${totalAmount}\nUPI payment initiated.\n\nCustomer email: ${email}\n\nPlease verify payment and process the order.`;
+        setTimeout(() => {
+            window.open(`mailto:${SELLER_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+        }, 500);
+
+        alert("Payment link opened! Complete the payment in your UPI app. An order notification has been sent to Kevin.");
+        document.getElementById('printModal').style.display = 'none';
+    }
+
+    function renderGallery() {
+        const searchTerm = currentSearch.toLowerCase();
+        let filtered = photos.filter(p => 
+            p.title.toLowerCase().includes(searchTerm) || 
+            (p.description && p.description.toLowerCase().includes(searchTerm))
+        );
+        document.getElementById('photoCount').innerText = `${filtered.length} photo${filtered.length !== 1 ? 's' : ''}`;
+        const grid = document.getElementById('photoGrid');
+        if (filtered.length === 0) {
+            grid.innerHTML = `<div class="empty-state"><i class="fas fa-camera"></i><p>No photos yet. (Admin can upload)</p></div>`;
+            return;
+        }
+        let html = '';
+        filtered.forEach(photo => {
+            html += `
+                <div class="photo-card">
+                    <div class="image-wrapper" onclick="openModal('${photo.image_url}')">
+                        <img src="${photo.image_url}" alt="${escapeHtml(photo.title)}" loading="lazy">
+                    </div>
+                    <div class="photo-info">
+                        <div class="photo-title">${escapeHtml(photo.title)}</div>
+                        <div class="photo-desc">${escapeHtml(photo.description)}</div>
+                        <div class="photo-actions">
+                            <button class="buy-print-btn" onclick="showPrintModalForPhoto('${photo.id}')"><i class="fas fa-shopping-cart"></i> Buy Print</button>
+                            ${adminMode ? `<button class="delete-btn" onclick="deletePhoto(${photo.id}, '${photo.image_url}')"><i class="fas fa-trash-alt"></i> Delete</button>` : ''}
+                        </div>
+                        <div class="photo-meta"><i class="far fa-calendar-alt"></i> ${new Date(photo.created_at).toLocaleDateString()}</div>
+                    </div>
+                </div>
+            `;
+        });
+        grid.innerHTML = html;
+    }
+
+    function showPrintModalForPhoto(id) {
+        const photo = photos.find(p => p.id == id);
+        if (photo) showPrintModal(photo);
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    function openModal(src) {
+        document.getElementById('modalImage').src = src;
+        document.getElementById('imageModal').style.display = 'flex';
+    }
+    function closeModal() {
+        document.getElementById('imageModal').style.display = 'none';
+    }
+
+    function promptAdminLogin() {
+        const pwd = prompt("Enter admin password:");
+        if (pwd === ADMIN_PASSWORD) {
+            adminMode = true;
+            document.getElementById('adminPanel').style.display = 'block';
+            document.getElementById('adminLoginBtn').style.display = 'none';
+            renderGallery();
+        } else {
+            alert("Wrong password!");
+        }
+    }
+
+    function logoutAdmin() {
+        adminMode = false;
+        document.getElementById('adminPanel').style.display = 'none';
+        document.getElementById('adminLoginBtn').style.display = 'inline-block';
+        renderGallery();
+    }
+
+    async function init() {
+        await loadPhotosFromSupabase();
+
+        document.getElementById('adminLoginBtn').onclick = promptAdminLogin;
+        document.getElementById('logoutAdminBtn').onclick = logoutAdmin;
+
+        let selectedFiles = [];
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+
+        uploadArea.onclick = () => fileInput.click();
+        uploadArea.ondragover = (e) => e.preventDefault();
+        uploadArea.ondrop = (e) => {
+            e.preventDefault();
+            selectedFiles = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+            if (selectedFiles.length) alert(`${selectedFiles.length} photo(s) selected`);
+        };
+        fileInput.onchange = (e) => {
+            selectedFiles = Array.from(e.target.files);
+            if (selectedFiles.length) alert(`${selectedFiles.length} photo(s) selected`);
+        };
+        uploadBtn.onclick = async () => {
+            if (!adminMode) {
+                alert("Admin access required.");
+                return;
+            }
+            if (selectedFiles.length === 0) { alert("Select at least one photo."); return; }
+            const title = document.getElementById('photoTitle').value;
+            const desc = document.getElementById('photoDesc').value;
+            const price = document.getElementById('photoPrice').value;
+            for (const file of selectedFiles) {
+                await uploadPhoto(file, title || file.name.split('.')[0], desc, price);
+            }
+            selectedFiles = [];
+            fileInput.value = '';
+            document.getElementById('photoTitle').value = '';
+            document.getElementById('photoDesc').value = '';
+            document.getElementById('photoPrice').value = '';
+        };
+
+        document.getElementById('searchInput').oninput = (e) => {
+            currentSearch = e.target.value;
+            renderGallery();
+        };
+
+        document.getElementById('printSize').addEventListener('change', updatePrice);
+        document.getElementById('printMaterial').addEventListener('change', updatePrice);
+        document.getElementById('printQty').addEventListener('input', updatePrice);
+        document.getElementById('confirmOrderBtn').onclick = placeOrder;
+        document.getElementById('closePrintModalBtn').onclick = () => document.getElementById('printModal').style.display = 'none';
+    }
+
+    window.deletePhoto = deletePhoto;
+    window.openModal = openModal;
+    window.closeModal = closeModal;
+    window.showPrintModalForPhoto = showPrintModalForPhoto;
+
+    init();
+
+    document.getElementById('imageModal').onclick = (e) => {
+        if (e.target === document.getElementById('imageModal')) closeModal();
+    };
+</script>
+</body>
+</html>
